@@ -142,20 +142,30 @@ if INCREMENTAL_MODE_MONTHS > 0:
 
 for s3_obj in s3_objects:
   print("=============")
+  if not s3_obj.endswith(".parquet"):
+    print('SKIPPING NON PARQUET FILE: {}'.format(s3_obj))
+    continue
   print('READING: {}'.format(s3_obj))
   df = wr.s3.read_parquet(path=s3_obj)
+  print("=== RAW BEGIN DATAFRAME INFO ===")
+  df.info()
+
+  print("=== RAW END DATAFRAME INFO ===")
   df.set_index('identity_line_item_id')
   print('Merging account tags')
-  df = df.merge(account_tags, left_on='line_item_usage_account_id', right_on='account_tag__account_id')
-  df.drop(columns=['account_tag__account_id'], inplace=True)
-
+  account_tags.info()
+  merged_df = df.merge(account_tags, left_on='line_item_usage_account_id', right_on='account_tag__account_id', how="left")
+  merged_df.drop(columns=['account_tag__account_id'], inplace=True)
   print("=== BEGIN DATAFRAME INFO ===")
-  df.info()
-  with pd.option_context('display.max_rows', None, 'display.max_columns', None): print(df.columns)
+  
+  print("Original Rows: {} Merged Rows: {}".format(df.shape[0], merged_df.shape[0]))
+
+  with pd.option_context('display.max_rows', None, 'display.max_columns', None): print(merged_df.columns)
   print("=== END DATAFRAME INFO ===")
   print ("WRITING TO PATH: {}".format("s3://"+S3_TARGET_BUCKET+"/"+S3_TARGET_PREFIX+"/"+ wr._utils.parse_path(s3_obj)[1].rsplit("/",1)[0]))
+  #print ("WRITING TO PATH: {}".format("s3://"+S3_TARGET_BUCKET+"/"+S3_TARGET_PREFIX+"/"+ wr._utils.parse_path(s3_obj)[1]))
   s3_written_objs = wr.s3.to_parquet(
-    df = df,
+    df = merged_df,
     path = "s3://"+S3_TARGET_BUCKET+"/"+S3_TARGET_PREFIX+"/"+ wr._utils.parse_path(s3_obj)[1].rsplit("/",1)[0],
     partition_cols=  ["line_item_usage_account_id"] if PARTITION_BY_ACCOUNT else [],
     mode = "overwrite",

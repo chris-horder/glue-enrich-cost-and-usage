@@ -21,7 +21,6 @@ Parameters:
     Type: String
     Description: "Name of the S3 bucket containing the existing Cost & Usage Reports"
     Default: ""
-    AllowedPattern: '^$|[0-9a-zA-Z]+([0-9a-zA-Z-]#[0-9a-zA-Z])#$'
     ConstraintDescription: "Bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."
 
   S3SourcePrefix:
@@ -152,7 +151,7 @@ Resources:
         "--table_name": "cur_enriched"
         "--overwrite_existing_table": "True" 
         "--partition_by_account": "True"
-        "--extra-py-files": !Sub 's3://${EnrichedCURBucket}/awswrangler-1.0.1-py3-none-any.whl'
+        "--extra-py-files": !Sub 's3://${EnrichedCURBucket}/awswrangler-1.9.3-py3-none-any.whl'
       GlueVersion: "1.0"
       ExecutionProperty:
         MaxConcurrentRuns: 1
