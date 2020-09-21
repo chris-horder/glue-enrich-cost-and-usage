@@ -1,4 +1,5 @@
 *venv*
+.shared
 .DS_Store
 .samples
 glue-enrich-cur.zip
