@@ -124,6 +124,7 @@ for tagKey in uniqueTagKeys:
 # Note: A lambda (get_kv_pair_value) is used so that it can handle exceptions when the tag does not exist for a particular account or the account had no tags at all
 
 account_tags.set_index("account_tag__account_id")
+# account_tags = account_tags.astype({'account_tag_AccountType': 'string'})
 print("Account tags DataFrame")
 account_tags.info()
 
@@ -151,7 +152,9 @@ for s3_obj in s3_objects:
   current_path = s3_obj.replace(s3_orginal_path, "").replace(current_file, "")
   print('READING: {} from path {} and file {}'.format(s3_obj, current_path, current_file))
 
-  df = wr.s3.read_parquet(path=s3_obj)
+  # df = wr.s3.read_parquet(path=s3_obj)
+  print(s3_obj.replace(current_file, ""))
+  df = wr.s3.read_parquet(path=s3_obj.replace(current_file, ""))
   print("=== RAW BEGIN DATAFRAME INFO ===")
   df.info()
 
@@ -199,6 +202,7 @@ if CREATE_TABLE:
       table=TABLE_NAME
     )
   
+  wr._data_types.athena_types_from_pandas(merged_df, index=False)
 
   print ("Creating Table {}.{} with path {}".format(DATABASE_NAME, TABLE_NAME, "s3://" + S3_TARGET_BUCKET + "/" + S3_TARGET_PREFIX)) 
   wr.catalog.create_parquet_table(
