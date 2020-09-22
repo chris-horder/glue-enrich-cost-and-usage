@@ -69,6 +69,7 @@ arg_parser.add_argument('--s3_target_prefix', required=True, help="The destinati
 arg_parser.add_argument('--incremental_mode_months', type=int, required=False, default=0, help="When set, last x months of CUR data is processed. When not set or set to 0, all data is processed. For incremental updates, recommend setting this to 2.")
 arg_parser.add_argument('--create_table', action='store', required=False, default=False, help="When set, a table will be created in Glue automatically and made available through Athena.")
 arg_parser.add_argument('--overwrite_existing_table', type=bool, action='store', required=False, default=False, help="When set, the existing table will be overwritten. This should be set when performing updates.")
+arg_parser.add_argument('--partition_by_account', type=bool, action='store', required=False, default=False, help="When set, an additional partition for line_item_usage_account_id will be created. Example: /year=2020/month=1/line_item_usage_account_id=123456789012")
 arg_parser.add_argument('--database_name', type=str, required=False, default=None, help="The name of the Glue database to create the table in. Must be set when --create_table is set")
 arg_parser.add_argument('--table_name', type=str, required=False, default=None, help="The name of the Glue table to create or overwrite. Must be set when --create_table is set")
 arg_parser.add_argument('--extra-py-files', type=str, required=False, default=None)
