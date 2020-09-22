@@ -131,7 +131,8 @@ account_tags.info()
 # Get a list of objects
 s3_orginal_path = "s3://"+S3_SOURCE_BUCKET+"/"+S3_SOURCE_PREFIX
 print("Listing objects in path: {}".format(s3_orginal_path))
-s3_objects = wr.s3.list_objects(s3_orginal_path)
+# s3_objects = wr.s3.list_objects(s3_orginal_path)
+s3_objects = wr.s3.list_directories(s3_orginal_path)
 
 # Sort objects by month, adding leading zeros to the months to sort correctly
 s3_objects.sort(key=lambda x: re.sub(r'(month=)(\d+)', lambda m : m.group(1)+m.group(2).zfill(2),x))
