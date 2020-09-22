@@ -24,6 +24,7 @@ import pandas as pd
 import boto3
 import argparse
 import re
+from functools import reduce
 
 orgs_client = boto3.client('organizations')
 
@@ -120,22 +121,27 @@ account_tags=account_tags.convert_dtypes()
 for tagKey in uniqueTagKeys:
 #   3. Use .apply with a lambda function on the 'Tags' column to retrieve nested 'Value' in each item in the column, if it exists
 #   4. Set the value of the new column to the series that was returned by .apply
+    new_tag_key = 'account_tag_' + tagKey
     account_tags['account_tag_' + tagKey] = accounts['Tags'].apply(lambda x: get_kv_pair_value(pd.DataFrame(x, columns=['Key', 'Value']).set_index('Key'),tagKey))
+    # ensure each tag is set to string
+    print('account_tag_' + tagKey)
+    account_tags = account_tags.astype({new_tag_key : 'string'})
 # Note: A lambda (get_kv_pair_value) is used so that it can handle exceptions when the tag does not exist for a particular account or the account had no tags at all
 
+#Set index for lookups with parquet data set
 account_tags.set_index("account_tag__account_id")
-# account_tags = account_tags.astype({'account_tag_AccountType': 'string'})
 print("Account tags DataFrame")
 account_tags.info()
 
 # Get a list of objects
 s3_orginal_path = "s3://"+S3_SOURCE_BUCKET+"/"+S3_SOURCE_PREFIX
 print("Listing objects in path: {}".format(s3_orginal_path))
-# s3_objects = wr.s3.list_objects(s3_orginal_path)
-s3_objects = wr.s3.list_directories(s3_orginal_path)
-
+s3_objects_raw = wr.s3.list_objects(s3_orginal_path)
+#Clean out the files as we want to treat each base folder as a parquet to read
+s3_objects = reduce(lambda l, x: l.append(x.replace(x.split("/")[-1], "")) or l if x.replace(x.split("/")[-1], "") not in l else l, s3_objects_raw, [])
 # Sort objects by month, adding leading zeros to the months to sort correctly
 s3_objects.sort(key=lambda x: re.sub(r'(month=)(\d+)', lambda m : m.group(1)+m.group(2).zfill(2),x))
+
 print("Objects found: {}".format(s3_objects))
 
 # If INCREMENTAL_MODE_MONTHS is greater than zero, only use the last INCREMENTAL_MODE_MONTHS items in the list. This assumes everything is partitioned by '/year=xxxx/month=xx/'
@@ -144,11 +150,7 @@ if INCREMENTAL_MODE_MONTHS > 0:
   print("Incremental mode set. Filtered objects: {}".format(s3_objects))
 
 for s3_obj in s3_objects:
-  print("=============")
-  if not s3_obj.endswith(".parquet"):
-    print('SKIPPING NON PARQUET FILE: {}'.format(s3_obj))
-    continue
-  
+  print("=============")  
   current_file = s3_obj.split("/")[-1]
   current_path = s3_obj.replace(s3_orginal_path, "").replace(current_file, "")
   print('READING: {} from path {} and file {}'.format(s3_obj, current_path, current_file))
