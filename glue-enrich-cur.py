@@ -137,7 +137,7 @@ account_tags.info()
 # Get a list of objects
 s3_orginal_path = "s3://"+S3_SOURCE_BUCKET+"/"+S3_SOURCE_PREFIX
 print("Listing objects in path: {}".format(s3_orginal_path))
-s3_objects_raw = wr.s3.list_objects(s3_orginal_path)
+s3_objects_raw = wr.s3.list_objects(s3_orginal_path, suffix=".parquet")
 #Clean out the files as we want to treat each base folder as a parquet to read
 s3_objects = reduce(lambda l, x: l.append(x.replace(x.split("/")[-1], "")) or l if x.replace(x.split("/")[-1], "") not in l else l, s3_objects_raw, [])
 # Sort objects by month, adding leading zeros to the months to sort correctly
