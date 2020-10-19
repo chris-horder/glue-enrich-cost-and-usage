@@ -197,6 +197,7 @@ for s3_obj in s3_objects:
   print("Schema captured: {}".format(LAST_SCHEMA_FROM_CUR))
   print("=============")
   df = None
+  gc.collect()
 
 
 databases = wr.catalog.databases()
