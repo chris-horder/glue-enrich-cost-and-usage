@@ -171,18 +171,18 @@ for s3_obj in s3_objects:
   with pd.option_context('display.max_rows', None, 'display.max_columns', None): print(df.columns)
   df.set_index('identity_line_item_id')
   print('Merging account tags')
-  merged_df = df.merge(account_tags, left_on='line_item_usage_account_id', right_on='account_tag__account_id', how="left")
-  merged_df.drop(columns=['account_tag__account_id'], inplace=True)
+  df = df.merge(account_tags, left_on='line_item_usage_account_id', right_on='account_tag__account_id', how="left")
+  df.drop(columns=['account_tag__account_id'], inplace=True)
   print("=== BEGIN DATAFRAME INFO ===")
-  merged_df.info()
-  print("Original Rows: {} Merged Rows: {}".format(df.shape[0], merged_df.shape[0]))
+  df.info()
+  print("Original Rows: {} Merged Rows: {}".format(df.shape[0], df.shape[0]))
 
-  with pd.option_context('display.max_rows', None, 'display.max_columns', None): print(merged_df.columns)
+  with pd.option_context('display.max_rows', None, 'display.max_columns', None): print(df.columns)
   print("=== END DATAFRAME INFO ===")
   print ("WRITING TO PATH: {}".format("s3://" + S3_TARGET_BUCKET + "/" + S3_TARGET_PREFIX))
 
   s3_written_objs = wr.s3.to_parquet(
-    df = merged_df,
+    df = df,
     path = "s3://" + S3_TARGET_BUCKET + "/" + S3_TARGET_PREFIX + current_path,
     partition_cols=  ["line_item_usage_account_id"] if PARTITION_BY_ACCOUNT else [],
     mode = "overwrite",
@@ -191,10 +191,12 @@ for s3_obj in s3_objects:
     dataset = True
   )
 
-  # Keep the last schema for the Gluce schema update below - don't want to carry the DataFrame var with us everywhere
-  LAST_SCHEMA_FROM_CUR = wr._data_types.athena_types_from_pandas(merged_df, index=False)
+  # Keep the last schema for the Glue schema update below - don't want to carry the DataFrame var with us everywhere
+  LAST_SCHEMA_FROM_CUR = wr._data_types.athena_types_from_pandas(df, index=False)
   print("Wrote: {}".format(s3_written_objs))
+  print("Schema captured: {}".format(LAST_SCHEMA_FROM_CUR))
   print("=============")
+  df = None
 
 
 databases = wr.catalog.databases()
