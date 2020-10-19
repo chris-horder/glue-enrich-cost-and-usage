@@ -18,7 +18,7 @@
 
 import os
 import sys
-
+import gc
 import awswrangler as wr
 import pandas as pd
 import boto3
@@ -55,7 +55,6 @@ def get_kv_pair_value(df, idx):
         return df.loc[idx][0]
     except KeyError:
         return None
-
 
 # OPTIONAL ARGUMENT PARSER (getResolvedOptions doesn't support optional arguments at the moment)
 arg_parser = argparse.ArgumentParser(
@@ -95,6 +94,10 @@ OVERWRITE_EXISTING_TABLE = args["overwrite_existing_table"]
 if TABLE_NAME == None or DATABASE_NAME == None: raise Exception('Must specify Glue Database and Table when "--create_table" is set')
 if wr.catalog.does_table_exist(DATABASE_NAME,TABLE_NAME) and not OVERWRITE_EXISTING_TABLE: raise Exception('The table {}.{} already exists but OVERWRITE_EXISTING_TABLE isn''t set.'.format(DATABASE_NAME, TABLE_NAME))
 
+#Instance details
+mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
+mem_gib = mem_bytes/(1024.**3)  # e.g. 3.74
+print('Memory on host is {:.2f} GB'.format(mem_gib))
 
 # First we retrieve the accounts through the organizations API
 print("Fetching accounts")
@@ -163,9 +166,10 @@ for s3_obj in s3_objects:
   df.info()
 
   print("=== RAW END DATAFRAME INFO ===")
+
   df.set_index('identity_line_item_id')
   print('Merging account tags')
-  account_tags.info()
+  merged_df.info()
   merged_df = df.merge(account_tags, left_on='line_item_usage_account_id', right_on='account_tag__account_id', how="left")
   merged_df.drop(columns=['account_tag__account_id'], inplace=True)
   print("=== BEGIN DATAFRAME INFO ===")
