@@ -166,14 +166,13 @@ for s3_obj in s3_objects:
   df.info()
 
   print("=== RAW END DATAFRAME INFO ===")
-
+  with pd.option_context('display.max_rows', None, 'display.max_columns', None): print(df.columns)
   df.set_index('identity_line_item_id')
   print('Merging account tags')
-  merged_df.info()
   merged_df = df.merge(account_tags, left_on='line_item_usage_account_id', right_on='account_tag__account_id', how="left")
   merged_df.drop(columns=['account_tag__account_id'], inplace=True)
   print("=== BEGIN DATAFRAME INFO ===")
-  
+  merged_df.info()
   print("Original Rows: {} Merged Rows: {}".format(df.shape[0], merged_df.shape[0]))
 
   with pd.option_context('display.max_rows', None, 'display.max_columns', None): print(merged_df.columns)
@@ -210,7 +209,7 @@ if CREATE_TABLE:
       table=TABLE_NAME
     )
   
-  wr._data_types.athena_types_from_pandas(merged_df, index=False)
+  # wr._data_types.athena_types_from_pandas(merged_df, index=False)
 
   print ("Creating Table {}.{} with path {}".format(DATABASE_NAME, TABLE_NAME, "s3://" + S3_TARGET_BUCKET + "/" + S3_TARGET_PREFIX)) 
   wr.catalog.create_parquet_table(
