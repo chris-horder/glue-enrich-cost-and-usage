@@ -91,6 +91,8 @@ DATABASE_NAME = args["database_name"]
 TABLE_NAME = args["table_name"]
 OVERWRITE_EXISTING_TABLE = args["overwrite_existing_table"]
 
+LAST_SCHEMA_FROM_CUR = ""
+
 if TABLE_NAME == None or DATABASE_NAME == None: raise Exception('Must specify Glue Database and Table when "--create_table" is set')
 if wr.catalog.does_table_exist(DATABASE_NAME,TABLE_NAME) and not OVERWRITE_EXISTING_TABLE: raise Exception('The table {}.{} already exists but OVERWRITE_EXISTING_TABLE isn''t set.'.format(DATABASE_NAME, TABLE_NAME))
 
@@ -189,6 +191,8 @@ for s3_obj in s3_objects:
     dataset = True
   )
 
+  # Keep the last schema for the Gluce schema update below - don't want to carry the DataFrame var with us everywhere
+  LAST_SCHEMA_FROM_CUR = wr._data_types.athena_types_from_pandas(merged_df, index=False)
   print("Wrote: {}".format(s3_written_objs))
   print("=============")
 
@@ -208,15 +212,13 @@ if CREATE_TABLE:
       database=DATABASE_NAME,
       table=TABLE_NAME
     )
-  
-  # wr._data_types.athena_types_from_pandas(merged_df, index=False)
 
   print ("Creating Table {}.{} with path {}".format(DATABASE_NAME, TABLE_NAME, "s3://" + S3_TARGET_BUCKET + "/" + S3_TARGET_PREFIX)) 
   wr.catalog.create_parquet_table(
     path = "s3://" + S3_TARGET_BUCKET + "/" + S3_TARGET_PREFIX,
     database = DATABASE_NAME,
     table = TABLE_NAME,
-    columns_types = wr._data_types.athena_types_from_pandas(merged_df, index=False),
+    columns_types = LAST_SCHEMA_FROM_CUR,
     partitions_types = {'year': 'string','month':'string'} 
   )
 
